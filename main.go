@@ -5,5 +5,12 @@ import (
 )
 
 func main() {
-	fmt.Printf("Hello, World!")
+	fmt.Printf("Start Go Kanban")
+
+	server := newAPIServer(":8080")
+
+	if err := server.Start(); err != nil {
+		fmt.Println("Error starting server:", err)
+		return
+	}
 }
