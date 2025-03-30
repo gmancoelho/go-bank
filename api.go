@@ -64,7 +64,11 @@ func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) err
 
 func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
 	log.Println("Create account request received")
-	return nil
+
+	// Simulate account creation logic
+	account := newAccount("Anton", "GG")
+
+	return writeJSON(w, http.StatusCreated, account)
 }
 
 func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
