@@ -13,7 +13,7 @@ const address = ":8080"
 func main() {
 	fmt.Printf("Start Go Bank\n")
 
-	store, err := s.NewPostgressStore()
+	store, err := s.NewPostgresStore()
 	if err != nil {
 		log.Fatal(err)
 	}
