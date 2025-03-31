@@ -5,7 +5,7 @@ import (
 )
 
 func main() {
-	fmt.Printf("Start Go Kanban")
+	fmt.Printf("Start Go Bank\n")
 
 	server := newAPIServer(":8080")
 

@@ -1,4 +1,4 @@
-module github.com/gmancoelho/go-kanban
+module github.com/gmancoelho/go-bank
 
 go 1.23.5
 
