@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-    "github.com/gmancoelho/go-bank/utils"
+
+	"github.com/gmancoelho/go-bank/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -13,7 +14,7 @@ type apiFunc func(w http.ResponseWriter, r *http.Request) error
 func makeHTTPHandlerFunc(fn apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := fn(w, r); err != nil {
-			utils.writeJSON(w, http.StatusInternalServerError,
+			utils.WriteJSON(w, http.StatusInternalServerError,
 				ApiError{
 					Code:    http.StatusInternalServerError,
 					Message: err.Error(),
@@ -26,7 +27,7 @@ type APIServer struct {
 	address string
 }
 
-func newAPIServer(address string) *APIServer {
+func NewAPIServer(address string) *APIServer {
 	return &APIServer{address: address}
 }
 
@@ -68,7 +69,7 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 	// Simulate account creation logic
 	account := newAccount("Anton", "GG")
 
-	return writeJSON(w, http.StatusCreated, account)
+	return utils.WriteJSON(w, http.StatusCreated, account)
 }
 
 func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
