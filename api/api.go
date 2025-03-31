@@ -7,6 +7,7 @@ import (
 
 	"github.com/gmancoelho/go-bank/models"
 	"github.com/gmancoelho/go-bank/utils"
+	r "github.com/gmancoelho/go-bank/repository"
 	"github.com/gorilla/mux"
 )
 
@@ -26,6 +27,7 @@ func makeHTTPHandlerFunc(fn apiFunc) http.HandlerFunc {
 
 type APIServer struct {
 	address string
+	store r.Storage
 }
 
 func NewAPIServer(address string) *APIServer {
