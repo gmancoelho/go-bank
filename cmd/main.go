@@ -18,6 +18,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if err := store.Init(); err != nil {
+		log.Fatal(err)
+	}
+
 	fmt.Printf("%+v\n", store)
 
 	server := api.NewAPIServer(address)
