@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+    "github.com/gmancoelho/go-bank/api"
 )
 
 func main() {

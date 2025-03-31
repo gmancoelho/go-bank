@@ -1,4 +1,4 @@
-package main
+package api
 
 type ApiError struct {
 	Code    int    `json:"code"`

@@ -1,10 +1,10 @@
-package main
+package api
 
 import (
 	"fmt"
 	"log"
 	"net/http"
-
+    "github.com/gmancoelho/go-bank/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -13,7 +13,7 @@ type apiFunc func(w http.ResponseWriter, r *http.Request) error
 func makeHTTPHandlerFunc(fn apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := fn(w, r); err != nil {
-			writeJSON(w, http.StatusInternalServerError,
+			utils.writeJSON(w, http.StatusInternalServerError,
 				ApiError{
 					Code:    http.StatusInternalServerError,
 					Message: err.Error(),
