@@ -1,0 +1,16 @@
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: gobank_user
+      POSTGRES_PASSWORD: gobank
+      POSTGRES_DB: gobank_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
