@@ -35,6 +35,7 @@ func (s *APIServer) Start() error {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/account", makeHTTPHandlerFunc(s.handleAccount))
+	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(s.handleAccount))
 
 	log.Println("JSON API server started on", s.address)
 
@@ -65,11 +66,9 @@ func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) err
 
 func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
 	log.Println("Create account request received")
-
-	// Simulate account creation logic
-	account := newAccount("Anton", "GG")
-
-	return utils.WriteJSON(w, http.StatusCreated, account)
+	vars := mux.Vars(r)
+	log.Println(vars)
+	return utils.WriteJSON(w, http.StatusCreated, &Account{})
 }
 
 func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
