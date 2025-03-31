@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gmancoelho/go-bank/models"
 	"github.com/gmancoelho/go-bank/utils"
 	"github.com/gorilla/mux"
 )
@@ -68,7 +69,7 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 	log.Println("Create account request received")
 	vars := mux.Vars(r)
 	log.Println(vars)
-	return utils.WriteJSON(w, http.StatusCreated, &Account{})
+	return utils.WriteJSON(w, http.StatusCreated, &models.Account{})
 }
 
 func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
