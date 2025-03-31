@@ -1,13 +1,14 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/gmancoelho/go-bank/models"
-	"github.com/gmancoelho/go-bank/utils"
 	r "github.com/gmancoelho/go-bank/repository"
+	"github.com/gmancoelho/go-bank/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -27,11 +28,11 @@ func makeHTTPHandlerFunc(fn apiFunc) http.HandlerFunc {
 
 type APIServer struct {
 	address string
-	store r.Storage
+	store   r.Storage
 }
 
-func NewAPIServer(address string) *APIServer {
-	return &APIServer{address: address}
+func NewAPIServer(address string, store r.Storage) *APIServer {
+	return &APIServer{address: address, store: store}
 }
 
 func (s *APIServer) Start() error {
@@ -64,14 +65,24 @@ func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error 
 
 func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
 	log.Println("Get account request received")
-	return nil
+	return utils.WriteJSON(w, http.StatusCreated, &models.Account{})
 }
 
 func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Create account request received")
-	vars := mux.Vars(r)
-	log.Println(vars)
-	return utils.WriteJSON(w, http.StatusCreated, &models.Account{})
+
+	createAccReq := new(models.CreateAccountRequest)
+
+	if err := json.NewDecoder(r.Body).Decode(createAccReq); err != nil {
+		return err
+	}
+
+	account := models.NewAccount(createAccReq.FirstName, createAccReq.LastName)
+
+	if err := s.store.CreateAccount(account); err != nil {
+		return err
+	}
+
+	return utils.WriteJSON(w, http.StatusCreated, account)
 }
 
 func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {

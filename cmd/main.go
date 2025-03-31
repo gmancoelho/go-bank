@@ -22,9 +22,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("%+v\n", store)
-
-	server := api.NewAPIServer(address)
+	server := api.NewAPIServer(address, store)
 
 	if err := server.Start(); err != nil {
 		fmt.Println("Error starting server:", err)
