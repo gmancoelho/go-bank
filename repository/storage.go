@@ -12,6 +12,7 @@ type Storage interface {
 	CreateAccount(*m.Account) error
 	DeleteAccount(int) error
 	UpdateAccount(*m.Account) error
+	GetAccounts() ([]*m.Account, error)
 	GetAccountByID(int) (*m.Account, error)
 }
 
@@ -53,7 +54,20 @@ func (s *PostgressStore) createAccountTable() error {
 	return err
 }
 
-func (s *PostgressStore) CreateAccount(*m.Account) error {
+func (s *PostgressStore) CreateAccount(account *m.Account) error {
+	query := `
+        INSERT INTO account (first_name, last_name, number, balance) 
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, created_at;
+    `
+
+	err := s.db.QueryRow(query, account.FirstName, account.LastName, account.Number, account.Balance).
+		Scan(&account.ID, &account.CreatedAt)
+
+	if err != nil {
+		return fmt.Errorf("failed to create account: %w", err)
+	}
+
 	return nil
 }
 
@@ -65,6 +79,28 @@ func (s *PostgressStore) DeleteAccount(int) error {
 func (s *PostgressStore) UpdateAccount(*m.Account) error {
 	return nil
 
+}
+
+func (s *PostgressStore) GetAccounts() ([]*m.Account, error) {
+	rows, err := s.db.Query("select * from account")
+	if err != nil {
+		return nil, err
+	}
+
+	accounts := make([]*m.Account, 0)
+
+	for rows.Next() {
+		account := &m.Account{}
+		err := rows.Scan(&account.ID, &account.FirstName, &account.LastName, &account.Number, &account.Balance, &account.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		accounts = append(accounts, account)
+	}
+
+	defer rows.Close()
+
+	return accounts, nil
 }
 
 func (s *PostgressStore) GetAccountByID(int) (*m.Account, error) {

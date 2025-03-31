@@ -39,7 +39,7 @@ func (s *APIServer) Start() error {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/account", makeHTTPHandlerFunc(s.handleAccount))
-	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(s.handleAccount))
+	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(s.handleGetAccountByID))
 
 	log.Println("JSON API server started on", s.address)
 
@@ -63,9 +63,24 @@ func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error 
 	return fmt.Errorf("method not allowed %s", r.Method)
 }
 
-func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
+func (s *APIServer) handleGetAccountByID(w http.ResponseWriter, r *http.Request) error {
 	log.Println("Get account request received")
 	return utils.WriteJSON(w, http.StatusCreated, &models.Account{})
+}
+
+func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
+	storage := s.store
+	accounts, err := storage.GetAccounts()
+
+	if err != nil {
+		return nil
+	}
+
+	if len(accounts) == 0 {
+		return utils.WriteJSON(w, http.StatusOK, []models.Account{})
+	}
+
+	return utils.WriteJSON(w, http.StatusCreated, accounts)
 }
 
 func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
