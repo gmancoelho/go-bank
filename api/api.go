@@ -104,7 +104,17 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 	createAccReq := new(models.CreateAccountRequest)
 
 	if err := json.NewDecoder(r.Body).Decode(createAccReq); err != nil {
-		return err
+		return utils.WriteJSON(w, http.StatusBadRequest, ApiError{
+			Code:    http.StatusBadRequest,
+			Message: "invalid request payload",
+		})
+	}
+
+	if createAccReq.FirstName == "" || createAccReq.LastName == "" {
+		return utils.WriteJSON(w, http.StatusBadRequest, ApiError{
+			Code:    http.StatusBadRequest,
+			Message: "first name and last name cannot be empty",
+		})
 	}
 
 	account := models.NewAccount(createAccReq.FirstName, createAccReq.LastName)
@@ -117,8 +127,29 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Delete account request received")
-	return nil
+	idStr := mux.Vars(r)
+	id, err := strconv.Atoi(idStr["id"])
+	if err != nil {
+		return utils.WriteJSON(w, http.StatusBadRequest, ApiError{
+			Code:    http.StatusBadRequest,
+			Message: "invalid or missing account ID",
+		})
+	}
+
+	if err := s.store.DeleteAccount(id); err != nil {
+		if err.Error() == fmt.Sprintf("account id %d not found", id) {
+			return utils.WriteJSON(w, http.StatusNotFound, ApiError{
+				Code:    http.StatusNotFound,
+				Message: err.Error(),
+			})
+		}
+		return utils.WriteJSON(w, http.StatusInternalServerError, ApiError{
+			Code:    http.StatusInternalServerError,
+			Message: "failed to delete account",
+		})
+	}
+
+	return utils.WriteJSON(w, http.StatusNoContent, nil)
 }
 
 func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {

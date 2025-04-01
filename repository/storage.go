@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	m "github.com/gmancoelho/go-bank/models"
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
 
@@ -61,24 +62,42 @@ func (s *PostgressStore) CreateAccount(account *m.Account) error {
         RETURNING id, created_at;
     `
 
+	// Execute the query and scan the returned values
 	err := s.db.QueryRow(query, account.FirstName, account.LastName, account.Number, account.Balance).
 		Scan(&account.ID, &account.CreatedAt)
 
 	if err != nil {
+		// Handle unique constraint violation for the "number" field
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			return fmt.Errorf("account number %d already exists", account.Number)
+		}
 		return fmt.Errorf("failed to create account: %w", err)
 	}
 
 	return nil
 }
 
-func (s *PostgressStore) DeleteAccount(int) error {
-	return nil
+func (s *PostgressStore) DeleteAccount(id int) error {
+	result, err := s.db.Exec("DELETE FROM account WHERE id = $1", id)
+	if err != nil {
+		return fmt.Errorf("failed to delete account: %w", err)
+	}
 
+	// Check the number of rows affected
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to retrieve rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("account id %d not found", id)
+	}
+
+	return nil
 }
 
 func (s *PostgressStore) UpdateAccount(*m.Account) error {
 	return nil
-
 }
 
 func (s *PostgressStore) GetAccounts() ([]*m.Account, error) {
