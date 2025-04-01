@@ -129,29 +129,61 @@ func (s *APIServer) getAccountById(w http.ResponseWriter, r *http.Request) error
 }
 
 func (s *APIServer) handleUpdateAccount(w http.ResponseWriter, r *http.Request) error {
-	createAccReq := new(m.CreateAccountRequest)
+	// Parse the account ID from the URL
+	id, err := parseAccountID(r)
+	if err != nil {
+		return u.WriteJSON(w, http.StatusBadRequest, m.ApiError{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
 
-	if err := json.NewDecoder(r.Body).Decode(createAccReq); err != nil {
+	// Decode the request payload
+	updateAccReq := new(m.CreateAccountRequest)
+	if err := json.NewDecoder(r.Body).Decode(updateAccReq); err != nil {
 		return u.WriteJSON(w, http.StatusBadRequest, m.ApiError{
 			Code:    http.StatusBadRequest,
 			Message: "invalid request payload",
 		})
 	}
 
-	if createAccReq.FirstName == "" || createAccReq.LastName == "" {
+	// Validate the request payload
+	if updateAccReq.FirstName == "" || updateAccReq.LastName == "" {
 		return u.WriteJSON(w, http.StatusBadRequest, m.ApiError{
 			Code:    http.StatusBadRequest,
 			Message: "first name and last name cannot be empty",
 		})
 	}
 
-	account := m.NewAccount(createAccReq.FirstName, createAccReq.LastName)
-
-	if err := s.store.CreateAccount(account); err != nil {
-		return err
+	// Retrieve the existing account
+	account, err := s.store.GetAccountByID(id)
+	if err != nil {
+		return u.WriteJSON(w, http.StatusInternalServerError, m.ApiError{
+			Code:    http.StatusInternalServerError,
+			Message: "failed to retrieve account",
+		})
+	}
+	if account == nil {
+		return u.WriteJSON(w, http.StatusNotFound, m.ApiError{
+			Code:    http.StatusNotFound,
+			Message: "account not found",
+		})
 	}
 
-	return u.WriteJSON(w, http.StatusCreated, account)
+	// Update the account fields
+	account.FirstName = updateAccReq.FirstName
+	account.LastName = updateAccReq.LastName
+
+	// Save the updated account
+	if err := s.store.UpdateAccount(account); err != nil {
+		return u.WriteJSON(w, http.StatusInternalServerError, m.ApiError{
+			Code:    http.StatusInternalServerError,
+			Message: "failed to update account",
+		})
+	}
+
+	// Return the updated account
+	return u.WriteJSON(w, http.StatusOK, account)
 }
 
 func parseAccountID(r *http.Request) (int, error) {
