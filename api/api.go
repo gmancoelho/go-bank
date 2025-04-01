@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gmancoelho/go-bank/models"
 	r "github.com/gmancoelho/go-bank/repository"
@@ -64,8 +65,23 @@ func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error 
 }
 
 func (s *APIServer) handleGetAccountByID(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Get account request received")
-	return utils.WriteJSON(w, http.StatusCreated, &models.Account{})
+	idStr := mux.Vars(r)
+	id, err := strconv.Atoi(idStr["id"])
+
+	if err != nil {
+		return fmt.Errorf("missing id")
+	}
+
+	account, err := s.store.GetAccountByID(id)
+	if err != nil {
+		return err
+	}
+
+	if account == nil {
+		return fmt.Errorf("account not found")
+	}
+
+	return utils.WriteJSON(w, http.StatusOK, account)
 }
 
 func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {

@@ -90,8 +90,7 @@ func (s *PostgressStore) GetAccounts() ([]*m.Account, error) {
 	accounts := make([]*m.Account, 0)
 
 	for rows.Next() {
-		account := &m.Account{}
-		err := rows.Scan(&account.ID, &account.FirstName, &account.LastName, &account.Number, &account.Balance, &account.CreatedAt)
+		account, err := scanIntoAccount(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -103,6 +102,25 @@ func (s *PostgressStore) GetAccounts() ([]*m.Account, error) {
 	return accounts, nil
 }
 
-func (s *PostgressStore) GetAccountByID(int) (*m.Account, error) {
-	return nil, nil
+func (s *PostgressStore) GetAccountByID(id int) (*m.Account, error) {
+	rows, err := s.db.Query("select * from account where id = $1", id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		account, err := scanIntoAccount(rows)
+		return account, err
+	}
+
+	return nil, fmt.Errorf("account id %d not found", id)
+}
+
+func scanIntoAccount(rows *sql.Rows) (*m.Account, error) {
+	account := new(m.Account)
+	err := rows.Scan(&account.ID, &account.FirstName, &account.LastName, &account.Number, &account.Balance, &account.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return account, nil
 }
