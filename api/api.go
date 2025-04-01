@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	m "github.com/gmancoelho/go-bank/models"
-	r "github.com/gmancoelho/go-bank/repository"
-	"github.com/gmancoelho/go-bank/utils"
+	repo "github.com/gmancoelho/go-bank/repository"
+	u "github.com/gmancoelho/go-bank/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -15,7 +15,7 @@ type apiFunc func(w http.ResponseWriter, r *http.Request) error
 func makeHTTPHandlerFunc(fn apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := fn(w, r); err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError,
+			u.WriteJSON(w, http.StatusInternalServerError,
 				m.ApiError{
 					Code:    http.StatusInternalServerError,
 					Message: err.Error(),
@@ -26,10 +26,10 @@ func makeHTTPHandlerFunc(fn apiFunc) http.HandlerFunc {
 
 type APIServer struct {
 	address string
-	store   r.Storage
+	store   repo.Storage
 }
 
-func NewAPIServer(address string, store r.Storage) *APIServer {
+func NewAPIServer(address string, store repo.Storage) *APIServer {
 	return &APIServer{address: address, store: store}
 }
 
