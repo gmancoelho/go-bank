@@ -3,6 +3,8 @@ package models
 import (
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewAccount(t *testing.T) {
@@ -11,36 +13,21 @@ func TestNewAccount(t *testing.T) {
 
 	account := NewAccount(firstName, lastName)
 
-	if account.FirstName != firstName {
-		t.Errorf("expected FirstName to be %s, got %s", firstName, account.FirstName)
-	}
-
-	if account.LastName != lastName {
-		t.Errorf("expected LastName to be %s, got %s", lastName, account.LastName)
-	}
-
-	if account.Number <= 0 {
-		t.Errorf("expected Number to be greater than 0, got %d", account.Number)
-	}
-
-	if time.Since(account.CreatedAt) > time.Second {
-		t.Errorf("expected CreatedAt to be recent, got %s", account.CreatedAt)
-	}
+	assert.Equal(t, firstName, account.FirstName, "expected FirstName to match")
+	assert.Equal(t, lastName, account.LastName, "expected LastName to match")
+	assert.Greater(t, account.Number, int64(0), "expected Number to be greater than 0")
+	assert.WithinDuration(t, time.Now().UTC(), account.CreatedAt, time.Second, "expected CreatedAt to be recent")
 }
 
 func TestGetID(t *testing.T) {
 	account := &Account{ID: 123}
 
-	if account.GetID() != 123 {
-		t.Errorf("expected ID to be 123, got %d", account.GetID())
-	}
+	assert.Equal(t, 123, account.GetID(), "expected ID to match")
 }
 
 func TestGetName(t *testing.T) {
 	account := &Account{FirstName: "John", LastName: "Doe"}
 
 	expectedName := "John Doe"
-	if account.GetName() != expectedName {
-		t.Errorf("expected Name to be %s, got %s", expectedName, account.GetName())
-	}
+	assert.Equal(t, expectedName, account.GetName(), "expected Name to match")
 }
