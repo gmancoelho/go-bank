@@ -39,7 +39,7 @@ func TestHandleGetAccountByID(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	router := mux.NewRouter()
-	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(server.handleGetAccountByID))
+	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(server.handleGetAccountById))
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)

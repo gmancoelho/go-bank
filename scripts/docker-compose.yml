@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: gobank
       POSTGRES_DB: gobank_db
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
 volumes:
   pgdata:

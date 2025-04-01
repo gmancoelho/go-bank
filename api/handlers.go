@@ -28,24 +28,16 @@ func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error 
 	return fmt.Errorf("method not allowed %s", r.Method)
 }
 
-func (s *APIServer) handleGetAccountByID(w http.ResponseWriter, r *http.Request) error {
-	idStr := mux.Vars(r)
-	id, err := strconv.Atoi(idStr["id"])
-
-	if err != nil {
-		return fmt.Errorf("missing id")
+func (s *APIServer) handleGetAccountById(w http.ResponseWriter, r *http.Request) error {
+	if r.Method == http.MethodGet {
+		return s.getAccountById(w, r)
 	}
 
-	account, err := s.store.GetAccountByID(id)
-	if err != nil {
-		return err
+	if r.Method == http.MethodDelete {
+		return s.handleDeleteAccount(w, r)
 	}
 
-	if account == nil {
-		return fmt.Errorf("account not found")
-	}
-
-	return u.WriteJSON(w, http.StatusOK, account)
+	return fmt.Errorf("method not allowed %s", r.Method)
 }
 
 func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
@@ -91,12 +83,11 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
-	idStr := mux.Vars(r)
-	id, err := strconv.Atoi(idStr["id"])
+	id, err := parseAccountID(r)
 	if err != nil {
 		return u.WriteJSON(w, http.StatusBadRequest, m.ApiError{
 			Code:    http.StatusBadRequest,
-			Message: "invalid or missing account ID",
+			Message: err.Error(),
 		})
 	}
 
@@ -113,5 +104,61 @@ func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) 
 		})
 	}
 
-	return u.WriteJSON(w, http.StatusNoContent, nil)
+	return u.WriteJSON(w, http.StatusNoContent, map[string]int{"deleted": id})
+}
+
+func (s *APIServer) getAccountById(w http.ResponseWriter, r *http.Request) error {
+	id, err := parseAccountID(r)
+	if err != nil {
+		return u.WriteJSON(w, http.StatusBadRequest, m.ApiError{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
+	account, err := s.store.GetAccountByID(id)
+	if err != nil {
+		return err
+	}
+
+	if account == nil {
+		return fmt.Errorf("account not found")
+	}
+
+	return u.WriteJSON(w, http.StatusOK, account)
+}
+
+func (s *APIServer) handleUpdateAccount(w http.ResponseWriter, r *http.Request) error {
+	createAccReq := new(m.CreateAccountRequest)
+
+	if err := json.NewDecoder(r.Body).Decode(createAccReq); err != nil {
+		return u.WriteJSON(w, http.StatusBadRequest, m.ApiError{
+			Code:    http.StatusBadRequest,
+			Message: "invalid request payload",
+		})
+	}
+
+	if createAccReq.FirstName == "" || createAccReq.LastName == "" {
+		return u.WriteJSON(w, http.StatusBadRequest, m.ApiError{
+			Code:    http.StatusBadRequest,
+			Message: "first name and last name cannot be empty",
+		})
+	}
+
+	account := m.NewAccount(createAccReq.FirstName, createAccReq.LastName)
+
+	if err := s.store.CreateAccount(account); err != nil {
+		return err
+	}
+
+	return u.WriteJSON(w, http.StatusCreated, account)
+}
+
+func parseAccountID(r *http.Request) (int, error) {
+	idStr := mux.Vars(r)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return 0, fmt.Errorf("invalid or missing account ID")
+	}
+	return id, nil
 }

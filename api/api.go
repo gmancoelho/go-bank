@@ -33,6 +33,13 @@ func NewAPIServer(address string, store repo.Storage) *APIServer {
 	return &APIServer{address: address, store: store}
 }
 
+func LoggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("Request: %s %s", r.Method, r.URL.Path)
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (s *APIServer) Start() error {
 	router := s.setupRouter()
 
@@ -44,8 +51,10 @@ func (s *APIServer) Start() error {
 func (s *APIServer) setupRouter() *mux.Router {
 	router := mux.NewRouter()
 
+	router.Use(LoggingMiddleware)
+
 	router.HandleFunc("/account", makeHTTPHandlerFunc(s.handleAccount)).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(s.handleGetAccountByID)).Methods(http.MethodGet)
+	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(s.handleGetAccountById))
 
 	return router
 }

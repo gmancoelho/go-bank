@@ -18,10 +18,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := store.Init(); err != nil {
-		log.Fatal(err)
-	}
-
 	server := api.NewAPIServer(address, store)
 
 	if err := server.Start(); err != nil {
