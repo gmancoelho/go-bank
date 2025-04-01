@@ -3,6 +3,8 @@ package models
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestApiErrorSerialization(t *testing.T) {
@@ -13,27 +15,16 @@ func TestApiErrorSerialization(t *testing.T) {
 
 	// Serialize to JSON
 	jsonData, err := json.Marshal(apiError)
-	if err != nil {
-		t.Fatalf("failed to serialize ApiError: %v", err)
-	}
+	assert.NoError(t, err, "failed to serialize ApiError")
 
 	expectedJSON := `{"code":404,"message":"Resource not found"}`
-	if string(jsonData) != expectedJSON {
-		t.Errorf("expected JSON %s, got %s", expectedJSON, string(jsonData))
-	}
+	assert.JSONEq(t, expectedJSON, string(jsonData), "serialized JSON does not match expected JSON")
 
 	// Deserialize from JSON
 	var deserializedError ApiError
 	err = json.Unmarshal(jsonData, &deserializedError)
-	if err != nil {
-		t.Fatalf("failed to deserialize ApiError: %v", err)
-	}
+	assert.NoError(t, err, "failed to deserialize ApiError")
 
-	if deserializedError.Code != apiError.Code {
-		t.Errorf("expected Code %d, got %d", apiError.Code, deserializedError.Code)
-	}
-
-	if deserializedError.Message != apiError.Message {
-		t.Errorf("expected Message %s, got %s", apiError.Message, deserializedError.Message)
-	}
+	assert.Equal(t, apiError.Code, deserializedError.Code, "deserialized Code does not match")
+	assert.Equal(t, apiError.Message, deserializedError.Message, "deserialized Message does not match")
 }
