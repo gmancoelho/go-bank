@@ -6,7 +6,6 @@ import (
 
 	m "github.com/gmancoelho/go-bank/models"
 	"github.com/lib/pq"
-	_ "github.com/lib/pq"
 )
 
 type Storage interface {
