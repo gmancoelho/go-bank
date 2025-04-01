@@ -1,13 +1,10 @@
 package api
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
-	"github.com/gmancoelho/go-bank/models"
+	m "github.com/gmancoelho/go-bank/models"
 	r "github.com/gmancoelho/go-bank/repository"
 	"github.com/gmancoelho/go-bank/utils"
 	"github.com/gorilla/mux"
@@ -19,7 +16,7 @@ func makeHTTPHandlerFunc(fn apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := fn(w, r); err != nil {
 			utils.WriteJSON(w, http.StatusInternalServerError,
-				ApiError{
+				m.ApiError{
 					Code:    http.StatusInternalServerError,
 					Message: err.Error(),
 				})
@@ -45,113 +42,4 @@ func (s *APIServer) Start() error {
 	log.Println("JSON API server started on", s.address)
 
 	return http.ListenAndServe(s.address, router)
-}
-
-func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
-
-	if r.Method == http.MethodGet {
-		return s.handleGetAccount(w, r)
-	}
-
-	if r.Method == http.MethodPost {
-		return s.handleCreateAccount(w, r)
-	}
-
-	if r.Method == http.MethodDelete {
-		return s.handleDeleteAccount(w, r)
-	}
-
-	return fmt.Errorf("method not allowed %s", r.Method)
-}
-
-func (s *APIServer) handleGetAccountByID(w http.ResponseWriter, r *http.Request) error {
-	idStr := mux.Vars(r)
-	id, err := strconv.Atoi(idStr["id"])
-
-	if err != nil {
-		return fmt.Errorf("missing id")
-	}
-
-	account, err := s.store.GetAccountByID(id)
-	if err != nil {
-		return err
-	}
-
-	if account == nil {
-		return fmt.Errorf("account not found")
-	}
-
-	return utils.WriteJSON(w, http.StatusOK, account)
-}
-
-func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
-	storage := s.store
-	accounts, err := storage.GetAccounts()
-
-	if err != nil {
-		return nil
-	}
-
-	if len(accounts) == 0 {
-		return utils.WriteJSON(w, http.StatusOK, []models.Account{})
-	}
-
-	return utils.WriteJSON(w, http.StatusCreated, accounts)
-}
-
-func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
-
-	createAccReq := new(models.CreateAccountRequest)
-
-	if err := json.NewDecoder(r.Body).Decode(createAccReq); err != nil {
-		return utils.WriteJSON(w, http.StatusBadRequest, ApiError{
-			Code:    http.StatusBadRequest,
-			Message: "invalid request payload",
-		})
-	}
-
-	if createAccReq.FirstName == "" || createAccReq.LastName == "" {
-		return utils.WriteJSON(w, http.StatusBadRequest, ApiError{
-			Code:    http.StatusBadRequest,
-			Message: "first name and last name cannot be empty",
-		})
-	}
-
-	account := models.NewAccount(createAccReq.FirstName, createAccReq.LastName)
-
-	if err := s.store.CreateAccount(account); err != nil {
-		return err
-	}
-
-	return utils.WriteJSON(w, http.StatusCreated, account)
-}
-
-func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
-	idStr := mux.Vars(r)
-	id, err := strconv.Atoi(idStr["id"])
-	if err != nil {
-		return utils.WriteJSON(w, http.StatusBadRequest, ApiError{
-			Code:    http.StatusBadRequest,
-			Message: "invalid or missing account ID",
-		})
-	}
-
-	if err := s.store.DeleteAccount(id); err != nil {
-		if err.Error() == fmt.Sprintf("account id %d not found", id) {
-			return utils.WriteJSON(w, http.StatusNotFound, ApiError{
-				Code:    http.StatusNotFound,
-				Message: err.Error(),
-			})
-		}
-		return utils.WriteJSON(w, http.StatusInternalServerError, ApiError{
-			Code:    http.StatusInternalServerError,
-			Message: "failed to delete account",
-		})
-	}
-
-	return utils.WriteJSON(w, http.StatusNoContent, nil)
-}
-
-func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
-	return nil
 }
