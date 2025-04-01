@@ -34,12 +34,18 @@ func NewAPIServer(address string, store repo.Storage) *APIServer {
 }
 
 func (s *APIServer) Start() error {
-	router := mux.NewRouter()
+	router := s.setupRouter()
 
-	router.HandleFunc("/account", makeHTTPHandlerFunc(s.handleAccount))
-	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(s.handleGetAccountByID))
-
-	log.Println("JSON API server started on", s.address)
+	log.Printf("JSON API server started on %s\n", s.address)
 
 	return http.ListenAndServe(s.address, router)
+}
+
+func (s *APIServer) setupRouter() *mux.Router {
+	router := mux.NewRouter()
+
+	router.HandleFunc("/account", makeHTTPHandlerFunc(s.handleAccount)).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(s.handleGetAccountByID)).Methods(http.MethodGet)
+
+	return router
 }

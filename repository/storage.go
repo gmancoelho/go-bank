@@ -11,7 +11,6 @@ import (
 type Storage interface {
 	CreateAccount(*m.Account) error
 	DeleteAccount(int) error
-	UpdateAccount(*m.Account) error
 	GetAccounts() ([]*m.Account, error)
 	GetAccountByID(int) (*m.Account, error)
 }
@@ -92,10 +91,6 @@ func (s *PostgressStore) DeleteAccount(id int) error {
 		return fmt.Errorf("account id %d not found", id)
 	}
 
-	return nil
-}
-
-func (s *PostgressStore) UpdateAccount(*m.Account) error {
 	return nil
 }
 

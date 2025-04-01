@@ -1,50 +1,17 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/gmancoelho/go-bank/models"
 	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
 )
 
-type MockStorage struct{}
-
-func (m *MockStorage) CreateAccount(account *models.Account) error {
-	account.ID = 1
-	return nil
-}
-
-func (m *MockStorage) DeleteAccount(id int) error {
-	return nil
-}
-
-func (m *MockStorage) UpdateAccount(account *models.Account) error {
-	return nil
-}
-
-func (m *MockStorage) GetAccounts() ([]*models.Account, error) {
-	return []*models.Account{
-		{ID: 1, FirstName: "John", LastName: "Doe", Number: 12345, Balance: 1000},
-	}, nil
-}
-
-func (m *MockStorage) GetAccountByID(id int) (*models.Account, error) {
-	return &models.Account{
-		ID:        id,
-		FirstName: "John",
-		LastName:  "Doe",
-		Number:    12345,
-		Balance:   1000,
-		CreatedAt: time.Now(),
-	}, nil
-}
-
-func TestAPIServer_Start(t *testing.T) {
+func TestHandleAccountIfAccountsIsEmpy(t *testing.T) {
 	store := &MockStorage{}
 	server := NewAPIServer(":8080", store)
 
@@ -55,41 +22,45 @@ func TestAPIServer_Start(t *testing.T) {
 	router.HandleFunc("/account", makeHTTPHandlerFunc(server.handleAccount))
 	router.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status OK, got %v", w.Code)
-	}
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var accounts []*models.Account
+	err := json.Unmarshal(w.Body.Bytes(), &accounts)
+	assert.NoError(t, err)
+	assert.Len(t, accounts, 1)
+	assert.Equal(t, "John", accounts[0].FirstName)
 }
 
-func TestHandleCreateAccount(t *testing.T) {
+func TestHandleGetAccountByID(t *testing.T) {
 	store := &MockStorage{}
 	server := NewAPIServer(":8080", store)
 
-	account := models.CreateAccountRequest{
-		FirstName: "John",
-		LastName:  "Doe",
-	}
-	body, _ := json.Marshal(account)
-
-	req := httptest.NewRequest(http.MethodPost, "/account", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+	req := httptest.NewRequest(http.MethodGet, "/account/1", nil)
 	w := httptest.NewRecorder()
 
 	router := mux.NewRouter()
-	router.HandleFunc("/account", makeHTTPHandlerFunc(server.handleAccount))
+	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(server.handleGetAccountByID))
 	router.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status OK, got %v", w.Code)
-	}
+	assert.Equal(t, http.StatusOK, w.Code)
 
-	var createdAccount models.Account
-	err := json.Unmarshal(w.Body.Bytes(), &createdAccount)
-	if err != nil {
-		t.Fatalf("failed to parse response body: %v", err)
-	}
+	var account models.Account
+	err := json.Unmarshal(w.Body.Bytes(), &account)
+	assert.NoError(t, err)
+	assert.Equal(t, "John", account.FirstName)
+	assert.Equal(t, int64(12345), account.Number)
+}
 
-	if createdAccount.FirstName != account.FirstName || createdAccount.LastName != account.LastName {
-		t.Errorf("expected account with name %s %s, got %s %s",
-			account.FirstName, account.LastName, createdAccount.FirstName, createdAccount.LastName)
-	}
+func TestHandleDeleteAccount(t *testing.T) {
+	store := &MockStorage{}
+	server := NewAPIServer(":8080", store)
+
+	req := httptest.NewRequest(http.MethodDelete, "/account/1", nil)
+	w := httptest.NewRecorder()
+
+	router := mux.NewRouter()
+	router.HandleFunc("/account/{id}", makeHTTPHandlerFunc(server.handleDeleteAccount))
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
 }
