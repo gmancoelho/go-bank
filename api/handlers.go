@@ -186,6 +186,21 @@ func (s *APIServer) handleUpdateAccount(w http.ResponseWriter, r *http.Request) 
 	return u.WriteJSON(w, http.StatusOK, account)
 }
 
+func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
+	transferReq := new(m.TransferRequest)
+
+	if err := json.NewDecoder(r.Body).Decode(transferReq); err != nil {
+		return u.WriteJSON(w, http.StatusBadRequest, m.ApiError{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
+	defer r.Body.Close()
+
+	return u.WriteJSON(w, http.StatusOK, transferReq)
+}
+
 func parseAccountID(r *http.Request) (int, error) {
 	idStr := mux.Vars(r)["id"]
 	id, err := strconv.Atoi(idStr)
