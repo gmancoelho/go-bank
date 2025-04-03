@@ -187,18 +187,94 @@ func (s *APIServer) handleUpdateAccount(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
+	// Decode the transfer request payload
 	transferReq := new(m.TransferRequest)
 
 	if err := json.NewDecoder(r.Body).Decode(transferReq); err != nil {
 		return u.WriteJSON(w, http.StatusBadRequest, m.ApiError{
 			Code:    http.StatusBadRequest,
-			Message: err.Error(),
+			Message: "invalid request payload",
 		})
 	}
 
 	defer r.Body.Close()
 
-	return u.WriteJSON(w, http.StatusOK, transferReq)
+	// Validate the transfer request
+	if transferReq.FromAccountID == transferReq.ToAccountID {
+		return u.WriteJSON(w, http.StatusBadRequest, m.ApiError{
+			Code:    http.StatusBadRequest,
+			Message: "source and destination accounts cannot be the same",
+		})
+	}
+	if transferReq.Amount <= 0 {
+		return u.WriteJSON(w, http.StatusBadRequest, m.ApiError{
+			Code:    http.StatusBadRequest,
+			Message: "transfer amount must be greater than zero",
+		})
+	}
+
+	// Retrieve the source account
+	fromAccount, err := s.store.GetAccountByID(transferReq.FromAccountID)
+	if err != nil {
+		return u.WriteJSON(w, http.StatusInternalServerError, m.ApiError{
+			Code:    http.StatusInternalServerError,
+			Message: "failed to retrieve source account",
+		})
+	}
+	if fromAccount == nil {
+		return u.WriteJSON(w, http.StatusNotFound, m.ApiError{
+			Code:    http.StatusNotFound,
+			Message: "source account not found",
+		})
+	}
+
+	// Retrieve the destination account
+	toAccount, err := s.store.GetAccountByID(transferReq.ToAccountID)
+	if err != nil {
+		return u.WriteJSON(w, http.StatusInternalServerError, m.ApiError{
+			Code:    http.StatusInternalServerError,
+			Message: "failed to retrieve destination account",
+		})
+	}
+	if toAccount == nil {
+		return u.WriteJSON(w, http.StatusNotFound, m.ApiError{
+			Code:    http.StatusNotFound,
+			Message: "destination account not found",
+		})
+	}
+
+	// Check if the source account has sufficient balance
+	if fromAccount.Balance < transferReq.Amount {
+		return u.WriteJSON(w, http.StatusBadRequest, m.ApiError{
+			Code:    http.StatusBadRequest,
+			Message: "insufficient balance in source account",
+		})
+	}
+
+	// Perform the transfer
+	fromAccount.Balance -= transferReq.Amount
+	toAccount.Balance += transferReq.Amount
+
+	// Update the accounts in the database
+	if err := s.store.UpdateAccount(fromAccount); err != nil {
+		return u.WriteJSON(w, http.StatusInternalServerError, m.ApiError{
+			Code:    http.StatusInternalServerError,
+			Message: "failed to update source account",
+		})
+	}
+	if err := s.store.UpdateAccount(toAccount); err != nil {
+		return u.WriteJSON(w, http.StatusInternalServerError, m.ApiError{
+			Code:    http.StatusInternalServerError,
+			Message: "failed to update destination account",
+		})
+	}
+
+	// Return the transfer details
+	return u.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"from_account_id": transferReq.FromAccountID,
+		"to_account_id":   transferReq.ToAccountID,
+		"amount":          transferReq.Amount,
+	})
 }
 
 func parseAccountID(r *http.Request) (int, error) {
